@@ -3,8 +3,15 @@
 set -e
 
 KUBECTL_VERSION=${1:-"latest"}
-KUBECTL_SHA256=${2:-"automatic"}
-USERNAME=${3:-"automatic"}
+HELM_VERSION=${2:-"latest"}
+KUBECTL_SHA256=${3:-"automatic"}
+HELM_SHA256="${4:-"automatic"}"
+USERNAME=${5:-"automatic"}
+
+HELM_GPG_KEYS_URI="https://raw.githubusercontent.com/helm/helm/main/KEYS"
+GPG_KEY_SERVERS="keyserver hkp://keyserver.ubuntu.com:80
+keyserver hkps://keys.openpgp.org
+keyserver hkp://keyserver.pgp.com"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo -e 'Script must be run as root. Use sudo, su, or add "USER root" to your Dockerfile before running this script.'
@@ -68,12 +75,30 @@ function find_version_from_git_tags() {
   echo "${variable_name}=${!variable_name}"
 }
 
+function get_common_setting() {
+  if [ "${common_settings_file_loaded}" != "true" ]; then
+    curl -sfL "https://aka.ms/vscode-dev-containers/script-library/settings.env" -o /tmp/vsdc-settings.env 2>/dev/null || echo "Could not download settings file. Skipping."
+    common_settings_file_loaded=true
+  fi
+  if [ -f "/tmp/vsdc-settings.env" ]; then
+    local multi_line=""
+    if [ "$2" = "true" ]; then multi_line="-z"; fi
+    local result
+    result="$(grep ${multi_line} -oP "$1=\"?\K[^\"]+" /tmp/vsdc-settings.env | tr -d '\0')"
+    if [ -n "${result}" ]; then declare -g $1="${result}"; fi
+  fi
+  echo "$1=${!1}"
+}
+
 check_packages \
   bash-completion \
   ca-certificates \
   coreutils \
   curl \
-  git
+  dirmngr \
+  git \
+  gnupg \
+  grep
 
 architecture="$(uname -m)"
 case $architecture in
@@ -107,7 +132,51 @@ if ! type kubectl >/dev/null 2>&1; then
 fi
 
 if [ ! -d "/etc/bash_completion.d" ]; then
-  mkdir /etc/bash_completion.d
+  mkdir -p /etc/bash_completion.d
 fi
 
 kubectl completion bash >/etc/bash_completion.d/kubectl
+
+find_version_from_git_tags HELM_VERSION "https://github.com/helm/helm"
+if [ "${HELM_VERSION::1}" != 'v' ]; then
+  HELM_VERSION="v${HELM_VERSION}"
+fi
+mkdir -p /tmp/helm
+helm_filename="helm-${HELM_VERSION}-linux-${architecture}.tar.gz"
+tmp_helm_filename="/tmp/helm/${helm_filename}"
+curl -sSL "https://get.helm.sh/${helm_filename}" -o "${tmp_helm_filename}"
+curl -sSL "https://github.com/helm/helm/releases/download/${HELM_VERSION}/${helm_filename}.asc" -o "${tmp_helm_filename}.asc"
+export GNUPGHOME="/tmp/helm/gnupg"
+mkdir -p "${GNUPGHOME}"
+chmod 700 ${GNUPGHOME}
+get_common_setting HELM_GPG_KEYS_URI
+get_common_setting GPG_KEY_SERVERS true
+curl -sSL "${HELM_GPG_KEYS_URI}" -o /tmp/helm/KEYS
+echo -e "disable-ipv6\n${GPG_KEY_SERVERS}" >${GNUPGHOME}/dirmngr.conf
+gpg -q --import "/tmp/helm/KEYS"
+if ! gpg --verify "${tmp_helm_filename}.asc" >${GNUPGHOME}/verify.log 2>&1; then
+  echo "Verification failed!"
+  cat /tmp/helm/gnupg/verify.log
+  exit 1
+fi
+if [ "${HELM_SHA256}" = "automatic" ]; then
+  curl -sSL "https://get.helm.sh/${helm_filename}.sha256" -o "${tmp_helm_filename}.sha256"
+  curl -sSL "https://github.com/helm/helm/releases/download/${HELM_VERSION}/${helm_filename}.sha256.asc" -o "${tmp_helm_filename}.sha256.asc"
+  if ! gpg --verify "${tmp_helm_filename}.sha256.asc" >/tmp/helm/gnupg/verify.log 2>&1; then
+    echo "Verification failed!"
+    cat /tmp/helm/gnupg/verify.log
+    exit 1
+  fi
+  HELM_SHA256="$(cat "${tmp_helm_filename}.sha256")"
+fi
+([ "${HELM_SHA256}" = "dev-mode" ] || (echo "${HELM_SHA256} *${tmp_helm_filename}" | sha256sum -c -))
+tar xf "${tmp_helm_filename}" -C /tmp/helm
+mv -f "/tmp/helm/linux-${architecture}/helm" /usr/local/bin/
+chmod 0755 /usr/local/bin/helm
+rm -rf /tmp/helm
+if ! type helm >/dev/null 2>&1; then
+  echo '(!) Helm installation failed!'
+  exit 1
+fi
+
+helm completion bash >/etc/bash_completion.d/helm
