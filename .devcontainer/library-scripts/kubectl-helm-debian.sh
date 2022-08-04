@@ -184,6 +184,8 @@ if ! type helm >/dev/null 2>&1; then
   exit 1
 fi
 
+helm completion bash >/etc/bash_completion.d/helm
+
 USERHOME="/home/$USERNAME"
 if [ "$USERNAME" = "root" ]; then
   USERHOME="/root"
@@ -212,3 +214,5 @@ if [ "${MINIKUBE_VERSION}" != "none" ]; then
   chown -R $USERNAME "${USERHOME}/.minikube"
   chmod -R u+wrx "${USERHOME}/.minikube"
 fi
+
+minikube completion bash >/etc/bash_completion.d/minikube
