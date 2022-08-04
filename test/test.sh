@@ -13,7 +13,10 @@ check "shellcheck" shellcheck --version
 check "editorconfig" ec --version
 check "trivy" trivy --version
 check "kubectl" kubectl version --client --output=yaml
+check "kubectl bash completion" test -f /etc/bash_completion.d/kubectl
 check "helm" helm version --client --short
+check "helm bash completion" test -f /etc/bash_completion.d/helm
 check "minikube" minikube version
+check "minikube bash completion" test -f /etc/bash_completion.d/minikube
 
 reportResults
