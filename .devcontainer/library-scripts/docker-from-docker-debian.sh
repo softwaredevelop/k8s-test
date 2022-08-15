@@ -45,7 +45,8 @@ export DEBIAN_FRONTEND=noninteractive
 check_packages \
   acl \
   apt-transport-https \
-  ca-certificates curl \
+  ca-certificates \
+  curl \
   gnupg2 \
   lsb-release
 
