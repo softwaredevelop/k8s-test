@@ -72,8 +72,9 @@ fi
 
 if ! grep -qE '^docker:' /etc/group; then
   groupadd --system docker
+elif [ "${USERNAME}" != "root" ]; then
+  usermod -aG docker "${USERNAME}"
 fi
-usermod -aG docker "${USERNAME}"
 
 tee --append /home/${USERNAME}/.bashrc \
   <<EOF
