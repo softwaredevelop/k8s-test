@@ -32,9 +32,8 @@ if [ -f "${MARKER_FILE}" ]; then
   source "${MARKER_FILE}"
 fi
 
-export DEBIAN_FRONTEND=noninteractive
-
 if [ "${PACKAGES_ALREADY_INSTALLED}" != "true" ] && [ "${CONTAINER_OS}" = "debian" ]; then
+  export DEBIAN_FRONTEND=noninteractive
   package_list="apt-utils \
         apt-transport-https \
         ca-certificates \
@@ -64,8 +63,11 @@ if [ "${PACKAGES_ALREADY_INSTALLED}" != "true" ] && [ "${CONTAINER_OS}" = "debia
   apt-get install --no-install-recommends --assume-yes ${package_list}
   PACKAGES_ALREADY_INSTALLED="true"
 elif [ "${PACKAGES_ALREADY_INSTALLED}" != "true" ] && [ "${CONTAINER_OS}" = "alpine" ]; then
-  package_list="curl \
+  package_list="ca-certificates \
+        curl \
+        dpkg \
         git \
+        libc6-compat \
         shadow \
         sudo"
   apk update
