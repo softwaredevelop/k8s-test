@@ -18,5 +18,6 @@ check "helm" helm version --client --short
 check "helm bash completion" test -f /etc/bash_completion.d/helm
 check "minikube" minikube version
 check "minikube bash completion" test -f /etc/bash_completion.d/minikube
+check "docker" docker version --format '{{.Server.Version}}'
 
 reportResults
