@@ -57,7 +57,7 @@ function check_packages() {
   fi
 }
 
-find_version_from_git_tags() {
+function find_version_from_git_tags() {
   local variable_name=$1
   local requested_version=${!variable_name}
   if [ "${requested_version}" = "none" ]; then return; fi
@@ -91,7 +91,7 @@ find_version_from_git_tags() {
   echo "${variable_name}=${!variable_name}"
 }
 
-get_common_setting() {
+function get_common_setting() {
   if [ "${common_settings_file_loaded}" != "true" ]; then
     curl -sfL "https://aka.ms/vscode-dev-containers/script-library/settings.env" -o /tmp/vsdc-settings.env 2>/dev/null || echo "Could not download settings file. Skipping."
     common_settings_file_loaded=true
