@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
+set -e
+
 USERNAME=${1:-"automatic"}
 SOURCE_SOCKET=${2:-"/var/run/docker-host.sock"}
 TARGET_SOCKET=${3:-"/var/run/docker.sock"}
-
-set -e
 
 if [ "$(id -u)" -ne 0 ]; then
   echo -e 'Script must be run as root. Use sudo, su, or add "USER root" to your Dockerfile before running this script.'
