@@ -18,7 +18,7 @@ RUN \
     bash /tmp/scripts/hadolint.sh "2.10.0" "alpine"; \
     bash /tmp/scripts/shfmt.sh "3.5.1" "alpine"; \
     bash /tmp/scripts/shellcheck.sh "0.8.0" "alpine"; \
-    bash /tmp/scripts/editorconfig.sh "2.5.0" "alpine"; \
+    bash /tmp/scripts/editorconfig.sh "2.6.0" "alpine"; \
     bash /tmp/scripts/trivy.sh "0.30.4" "alpine"; \
     bash /tmp/scripts/kubectl-helm.sh "alpine"; \
     bash /tmp/scripts/docker-from-docker.sh "alpine"; \
